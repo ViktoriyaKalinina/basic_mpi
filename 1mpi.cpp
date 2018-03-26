@@ -1,5 +1,3 @@
-//Написать mpi программу, печатающую "Hello, World!". Запустить программу на 4 процессах.
-
 #include <mpi.h>
 #include <stdio.h>
  
@@ -14,3 +12,6 @@ int main (int argc, char* argv[])
   MPI_Finalize();
   return 0;
 }
+
+
+// mpiexec -n 4 ./a.out
