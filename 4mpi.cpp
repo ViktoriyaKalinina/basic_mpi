@@ -25,8 +25,8 @@ int main(int argc, char **argv)
     A[i] = rand() % N;
   }
 
-  receive = 0.0;
-  send = 0.0;
+  receive = 0;
+  send = 0;
   if (rank == 0) {
     
     for (int i = 0; i < N; i++)
