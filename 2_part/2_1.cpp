@@ -69,23 +69,15 @@ int main(int argc, char **argv) {
     
     else if (process_id == 2) {
     
-      int xy[count_message_size];
+      int xy[count_message_size], yx[count_message_size];
      
       for (int i = 0; i < count_message_size; i++) {
         xy[i] = x[i] * y[i];
+				y[i] = 0;
       }
 
       MPI_Send(xy, count_message_size, MPI_INT, 0, 4, MPI_COMM_WORLD);
-    }
-
-    else if (process_id == 3) {
-        int yx[count_message_size];
-
-        for (int i = 0; i < count_message_size; i++) {
-            yx[i] = x[j];
-        }
-        
-        MPI_Send(yx, count_message_size, MPI_INT, 0, 5, MPI_COMM_WORLD);
+			MPI_Send(yx, count_message_size, MPI_INT, 0, 5, MPI_COMM_WORLD);
     }
     printf("process_id = %d; size = %d\n", process_id, count_message_size);
   }
