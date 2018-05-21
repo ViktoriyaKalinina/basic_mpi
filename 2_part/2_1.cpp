@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     MPI_Recv(a, size, MPI_INT, 1, 3, MPI_COMM_WORLD, &status);
     print_vector(a); // xi * alfa + yi * beta
 
-    int xy[size], yx[size];
+    int xy[size], yx[size], x_to_y[size];
 
     MPI_Recv(xy, size, MPI_INT, 2, 4, MPI_COMM_WORLD, &status);
     MPI_Recv(yx, size, MPI_INT, 2, 5, MPI_COMM_WORLD, &status);
@@ -73,7 +73,8 @@ int main(int argc, char **argv) {
      
       for (int i = 0; i < count_message_size; i++) {
         xy[i] = x[i] * y[i];
-				y[i] = 0;
+				swap(y[i], x[i]);
+        yx[i] = y[i];
       }
 
       MPI_Send(xy, count_message_size, MPI_INT, 0, 4, MPI_COMM_WORLD);

@@ -3,16 +3,15 @@
 #include "mpi.h"
 #include <stdio.h>
 
-
 using namespace std;
 
 #define size1 3
 #define size2 3
 
 void printArr(const int a[][size2], int sizea, int sizeb) {
-    for (int i=0; i<sizea; i++) {
-        for (int j=0; j<sizeb; j++) {
-            cout<<a[i][j]<<" ";
+    for (int i = 0; i < sizea; i++) {
+        for (int j = 0; j < sizeb; j++) {
+          cout<<a[i][j]<<" ";
         }
         cout << "\n";
     }
@@ -30,8 +29,9 @@ int main( int argc, char **argv) {
     int count_message_size = 0;
 
     if (process_id == 0) {
+
         int x[size1][size2] = {{1,2, 3}, {4,5 ,6}, {7, 8,9}};
-        int y[size1][size2] = {{1,2, 3}, {4,5 ,6},{7, 8,9}};
+        int y[size1][size2] = {{1,2, 3}, {4,5 ,6}, {7, 8,9}};
 
         for (int i=1; i<process_size; i++) {
             MPI_Send(x,size1 * size2, MPI_INT, i, 0, MPI_COMM_WORLD);
@@ -40,15 +40,17 @@ int main( int argc, char **argv) {
         int a[size1][size2];
 
         MPI_Recv(a, size1 * size2, MPI_INT, 1, 3, MPI_COMM_WORLD, &status);
+        
         cout<<"\n\na = ";
         printArr(a, size1, size2);
 
         int mult[size1][size2];
+        
         MPI_Recv(mult, size1 * size2, MPI_INT, 2, 4, MPI_COMM_WORLD, &status);
         cout<<"\n\nb = ";
         printArr(mult, size1, size2);
     } else  {
-        for (int i=0; i<process_size; i++) {
+        for (int i = 0; i < process_size; i++) {
             MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
             MPI_Get_count(&status, MPI_INT, &count_message_size);
             int size = (int)sqrt(count_message_size);
