@@ -7,65 +7,55 @@ MPI_Send разослать блоки массива на остальные п
 на 3м процессе с 2×(12/p+1) до 3×(12/p+2) и т.д. 
 Вывести элементы массива на экран на каждом процессе. */
 
-#include <stdio.h> 
-#include <stdlib.h> 
-#include <mpi.h>
+#include <iostream>
+#include <cmath>
+#include "mpi.h"
+#include <stdio.h>
 
-// mult matrix x vector
+using namespace std;
 
-int main(int argc, char* argv[]){
-	int x[10][10];
-	int y[10];
-	int ProcRank, ProcNum, N = 10;
-	int resultMin;
-	int resultMax;
+int *cut_array(int size, int process, int source[]) {
+  int *result = new int[size];
+  int count = 0;
+  int head = (process - 1) * size;
+  int tail = (process) * size;
+  for (int i = head; i < tail; i++) {
+    result[count] = source[i];
+    count++;
+  }
+  return result;
+}
 
-	// init and stuff
-	MPI_Init(&argc, &argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
-	MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
-	int elements_per_proc = N * N / ProcNum;
-	int *subarr1 = new int[elements_per_proc];
+int main( int argc, char **argv) {
+  MPI_Init(&argc, &argv);
 
-	srand(time(NULL));
-	if (ProcRank == 0){
-		for (int i = 0; i < N; i++)
-		{
-			for (int j = 0; j < N; j++) {
-				x[i][j] = rand() % 100;
-			}
-		}
-		for (int i = 0; i < N; i++) {
-			for (int j = 0; j < N; j++) {
-				printf(" %d ", x[j][i]);
-			}
-			printf("\n");
-		}
-		printf("\n");
-		for (int i = 0; i < N; i++)
-		{
-			y[i] = rand() % 100;
-			printf(" %d ", y[i]);
-		}
-		printf("\n\n");
-	}
-	// Distribute the arrays
-	MPI_Scatter(x, elements_per_proc, MPI_INT,
-		subarr1, elements_per_proc, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Bcast(y, N, MPI_INT, 0, MPI_COMM_WORLD);
+  int rank, total_processes;
+  MPI_Status status;
 
-	for (int i = 0; i < elements_per_proc; i++)
-		subarr1[i] *= y[i % N];
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &total_processes);
 
-	// Perform global max reduction
-	MPI_Gather(subarr1, elements_per_proc, MPI_INT, x, elements_per_proc, MPI_INT, 0, MPI_COMM_WORLD);
-	if (ProcRank == 0)
-		for (int i = 0; i < N; i++) {
-			for (int j = 0; j < N; j++) {
-				printf(" %d ", x[j][i]);
-			}
-			printf("\n");
-		}
-	MPI_Finalize();
-	return 0;
+  int message_size;
+
+  if (rank == 0) {
+    int array[12] = { 1, 2, 3, 4, 5 ,6 ,7 ,8, 9, 10, 11, 12 };
+    for (int i = 1; i < total_processes; i++) {
+      int size = 12 / (total_processes + 1);
+      int *message = cut_array(size, i, array);
+      MPI_Send(message, size, MPI_INT, i, 0, MPI_COMM_WORLD);
+    }
+  } else  {
+    MPI_Probe(0, 0, MPI_COMM_WORLD, &status);
+    MPI_Get_count(&status, MPI_INT, &message_size);
+    int array[message_size];
+    MPI_Recv(array, message_size, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    printf("process id = %d; message_size = %d\n", rank, message_size);
+    for (int i = 0; i < message_size; i++) {
+      cout << array[i] << " ";
+    }
+    cout<<"\n";
+  }
+
+  MPI_Finalize();
+  return 0;
 }
