@@ -1,138 +1,95 @@
-#include <iostream>
-#include <cmath>
+/* На основе исходной группы, создать 4 новые группы процессов со своим коммуникатором. 
+На каждом процессе каждой группы объявить одномерный массив целых чисел и заполнить его 
+числовыми значениями, равными номеру группы. Используя коллективные операции, собрать 
+локальные массивы на нулевых   процессах каждой группы. Полученные массивы выдать на экран. 
+Используя интеркоммуникатор, выполнить обмен собранными массивами между  
+первой – второй и третьей - четвертой группами.  
+Полученные массивы выдать на экран. Выполнить программу на 12 процессах.	 
+*/
 #include "mpi.h"
-#include <stdio.h>
+#include <iostream>
 #include <cstdlib>
 
 using namespace std;
 
-#define size 10
-#define n 4
-#define m 3
 
-void printArr(int a[], int s) {
-    for (int i=0; i<s; i++) {
-        cout<< a[i] <<" ";
-    } 
-    cout<<"\n";
+int main (int argc, char **argv)
+{
+  MPI_Init (&argc, &argv);
+
+  int total_processes, main_rank;
+  MPI_Comm_size( MPI_COMM_WORLD, &total_processes );
+  MPI_Comm_rank( MPI_COMM_WORLD, &main_rank );
+
+  MPI_Comm my_comm;
+
+  int color = main_rank / 3;
+  MPI_Comm_split(MPI_COMM_WORLD, color, main_rank % 3, &my_comm);
+
+  int rank = -1;
+  if (my_comm != MPI_COMM_NULL) {
+    MPI_Comm_rank(my_comm, &rank);
+  }
+  int size = -1;
+  if (my_comm != MPI_COMM_NULL) MPI_Comm_size(my_comm, &size);
+
+  int mas[4] = {color, color, color, color};
+
+  int com[12];
+  MPI_Gather(&mas, 4, MPI_INT, &com, 4, MPI_INT, 0, my_comm);
+
+
+  if (rank == 0) {
+    cout << "from " << color << " group, com = ";
+    for (int i = 0; i < 12; ++i) {
+      cout << com[i] << " ";
+    }
+    cout << endl;
+  }
+
+  int tag = -1;
+  int rlead = -1;
+
+  if (color == 0) {
+    tag = 333;
+    rlead = 3;
+  }
+  if (color == 1) {
+    tag = 333;
+    rlead = 0;
+  }
+  if (color == 2) {
+    tag = 999;
+    rlead = 9;
+  }
+  if (color == 3) {
+    tag = 999;
+    rlead = 6;
+  }
+
+  MPI_Comm intercomm;
+  MPI_Intercomm_create(my_comm, 0, MPI_COMM_WORLD, rlead, tag, &intercomm);
+
+  if ((color == 0 || color == 2) && rank == 0) {
+    MPI_Send(&com, 12, MPI_INT, 0, color, intercomm);
+  }
+
+  if ((color == 1 || color == 3) && rank == 0) {
+    int buf[12];
+    MPI_Recv(&buf, 12, MPI_INT, MPI_ANY_SOURCE, color - 1, intercomm, MPI_STATUS_IGNORE);
+
+    cout << endl;
+    cout << "From " << color << " group, buf = ";
+    for (int i = 0; i < 12; ++i) {
+      cout << buf[i] << " ";
+    }
+    cout << endl;
+  }
+
+
+  if (my_comm != MPI_COMM_NULL) MPI_Comm_free(&my_comm);
+
+  MPI_Finalize();
+  return 0;
 }
 
-int main( int argc, char **argv) {
-    MPI_Init(&argc, &argv);
-    
-    int process_id, process_size;
-    MPI_Status status;
-
-    int newGroupProcessId[4][3] = {
-        {0,1,2},
-        {3,4,5},
-        {6,7,8},
-        {8,10,11}
-    };
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
-    MPI_Comm_size(MPI_COMM_WORLD, &process_size);
-    
-    MPI_Group wgroup, g1, g2,g3,g4;
-    MPI_Comm_group(MPI_COMM_WORLD, &wgroup);
-    MPI_Group_incl(wgroup, m, newGroupProcessId[0], &g1);
-    MPI_Group_incl(wgroup, m, newGroupProcessId[1], &g2);
-    MPI_Group_incl(wgroup, m, newGroupProcessId[2], &g3);
-    MPI_Group_incl(wgroup, m, newGroupProcessId[3], &g4);
-
-    MPI_Comm cm1, cm2, cm3, cm4, intercomm1, intercomm2, local1, local2;
-    MPI_Comm_create(MPI_COMM_WORLD, g1, &cm1);
-    MPI_Comm_create(MPI_COMM_WORLD, g2, &cm2);
-    MPI_Comm_create(MPI_COMM_WORLD, g3, &cm3);
-    MPI_Comm_create(MPI_COMM_WORLD, g4, &cm4);
-
-    int rank1 = -1;
-    int rank2 = -1;
-    int rank3 = -1;
-    int rank4 = -1;
-
-    int a[size];
-
-    if (cm1 != MPI_COMM_NULL)  {
-        MPI_Comm_rank(cm1, &rank1);
-        for (int i = 0; i<m; i++) {
-            a[i] = 1;
-        }
-    }
-    if (cm2 != MPI_COMM_NULL)  {
-        MPI_Comm_rank(cm2, &rank2);
-            for (int i = 0; i<m; i++) {
-                a[i] = 2;
-            }
-    }
-    if (cm3 != MPI_COMM_NULL)  {
-        MPI_Comm_rank(cm3, &rank3);
-            for (int i = 0; i<m; i++) {
-                a[i] = 3;
-            }
-    }
-    if (cm4 != MPI_COMM_NULL)  {
-        MPI_Comm_rank(cm4, &rank4);
-            for (int i = 0; i<m; i++) {
-                a[i] = 4;
-            }
-    }
-
-    int gathered_arr[m][m];
-
-    if (cm1 != MPI_COMM_NULL)
-        MPI_Gather(&a, m, MPI_INT, gathered_arr, m, MPI_INT, 0, cm1);
-    if (cm2 != MPI_COMM_NULL)
-        MPI_Gather(&a, m, MPI_INT, gathered_arr, m, MPI_INT, 0, cm2);
-    if (cm3 != MPI_COMM_NULL)
-        MPI_Gather(&a, m, MPI_INT, gathered_arr, m, MPI_INT, 0, cm3);
-    if (cm4 != MPI_COMM_NULL)
-        MPI_Gather(&a, m, MPI_INT, gathered_arr, m, MPI_INT, 0, cm4);
-
-    if (rank1 == 0 || rank2 == 0 || rank3 == 0 || rank4 == 0) {
-        for (int i = 0; i< m; i++) {
-            for (int j=0; j<m;j++) {
-                printf("%d ", gathered_arr[i][j]);
-            }
-            printf("\n");
-        }
-    }
-    int rlead;
-    int tag = 777;
-    if (cm1!=MPI_COMM_NULL && rank1 == 0) { local1=cm1; rlead=1;}
-    if (cm2!=MPI_COMM_NULL && rank2 == 0) { local1=cm1; rlead=0;}
-        
-    //intercomm1 create
-    if (rank1 == 0 || rank2 == 0) {
-        MPI_Intercomm_create(local1, 0, MPI_COMM_WORLD, rlead, tag, &intercomm1);
-    }
-
-    if (rank1 == 0 && intercomm1 != MPI_COMM_NULL) {
-        MPI_Send(&gathered_arr, m*m, MPI_INT, 1, 20, intercomm1);
-    }
-    if (cm2 != MPI_COMM_NULL && rank2 == 0) {
-        int gath_new[m][m];
-        MPI_Recv(&gath_new, m*m, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, intercomm1, MPI_STATUSES_IGNORE);
-    }
-
-
-    if (cm1 != MPI_COMM_NULL) {
-        MPI_Comm_free(&cm1);
-    }
-    if (cm2 != MPI_COMM_NULL) {
-        MPI_Comm_free(&cm2);
-    }
-    if (cm3 != MPI_COMM_NULL) {
-        MPI_Comm_free(&cm3);
-    }
-    if (cm4 != MPI_COMM_NULL) {
-        MPI_Comm_free(&cm4);
-    }
-    MPI_Group_free(&g1);
-    MPI_Group_free(&g2);
-    MPI_Group_free(&g3);
-    MPI_Group_free(&g4);
-
-    MPI_Finalize();
-    return 0;
-}
