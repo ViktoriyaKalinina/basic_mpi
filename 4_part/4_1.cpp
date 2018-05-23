@@ -32,7 +32,7 @@ int main( int argc, char **argv) {
 
     MPI_Scatter(globalData, a, MPI_INT, &localData, a, MPI_INT, 0, MPI_COMM_WORLD);
     
-    // Local 
+    // local 
     int sum = 0, sum_max;
     for (int i = 0; i < a; i++) {
         sum += abs(localData[i]);
