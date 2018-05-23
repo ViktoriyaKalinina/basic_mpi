@@ -1,3 +1,9 @@
+/* векторы x, y заданы на нулевом процессе,
+пересылаются равными блоками остальным процессам (mpi_send)
+все процессы вычисляют элементы искомых массивов и отправляют обратно.
+реализовать: а. z = x +y; b. z = y * x;  c. x <-> y
+*/
+
 #include <iostream>
 #include <cmath>
 #include "mpi.h"
@@ -38,16 +44,16 @@ int main(int argc, char **argv) {
     int a[size];
 
     MPI_Recv(a, size, MPI_INT, 1, 3, MPI_COMM_WORLD, &status);
-    print_vector(a); // xi * alfa + yi * beta
+    print_vector(a);
 
-    int xy[size], yx[size], x_to_y[size];
+    int xy[size], yx[size];
 
     MPI_Recv(xy, size, MPI_INT, 2, 4, MPI_COMM_WORLD, &status);
     MPI_Recv(yx, size, MPI_INT, 2, 5, MPI_COMM_WORLD, &status);
    
-    print_vector(xy); // xi * yi ? {1*3}, {2*4} = {3, 8} 
+    print_vector(xy);
     
-    print_vector(yx); // xi <--> yi  1,2??
+    print_vector(yx);
 
   } else {
     
@@ -73,7 +79,8 @@ int main(int argc, char **argv) {
      
       for (int i = 0; i < count_message_size; i++) {
         xy[i] = x[i] * y[i];
-				swap(y[i], x[i]);
+				
+        swap(y[i], x[i]);
         yx[i] = y[i];
       }
 
